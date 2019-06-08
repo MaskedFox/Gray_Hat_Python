@@ -1,15 +1,20 @@
-//@Name: my_debuffer_defines.py
+"""
+//@File Name: my_debuffer_defines.py
 //@Summary: Example Windows Debugger from Gray Hat Python
 //@Author MaskedFox
 //@Date: June 04, 2019
+//@Email: iammaskedfx@gmail.com
+//@Credits: Gray Hat Python
+//@Status: On Going
+"""
 
 from ctypes import *
 
 # Let's map the Microsoft types to ctypes for clarity
-WORD = C)ushort
+WORD = c_ushort
 DWORD = c_ushort
 LPBYTE = POINTER(c_ubyte)
-LPTSTR = POOINTER(c_char)
+LPTSTR = POINTER(c_char)
 HANDLE = c_void_p
 
 #Constants
@@ -38,11 +43,11 @@ class STARTUPINFO(Structure):
             ("hStdError",    HANDLE),
         ]
 
-class PROCESS_INFORMATION(structure):
+class PROCESS_INFORMATION(Structure):
     _fields_ = [
-        ("hProcess:, HANDLE),
+        ("hProcess:", HANDLE),
         ("hThread", HANDLE),
-        ("dwProcessID", DWORD),
+        ("dwProcessId", DWORD),
         ("dwThreadId", DWORD),
     ]
 

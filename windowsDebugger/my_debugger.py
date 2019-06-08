@@ -1,7 +1,12 @@
-//@ Author: Masked Fox
-//@ Project: Gray Hat Python - Windows Debugger
-//@Date: 06/05/2019
-//@Summary: This is the Windows Debugger for the current Project
+"""
+//@File Name: my_debugger.py
+//@Summary: Example Windows Debugger from Gray Hat Python
+//@Author MaskedFox
+//@Date: June 04, 2019
+//@Email: iammaskedfx@gmail.com
+//@Credits: Gray Hat Python
+//@Status: On Going
+"""
 
 from ctypes import *
 from my_debugger_defines import *
@@ -43,9 +48,9 @@ class debugger():
                                     None,
                                     byref(startupinfo),
                                     byref(process_information)):
-            print("[*] We have successfully launched the process!"
-            print("[*] PID: %d" % process_information.dwProcessId
-i
+            print("[*] We have successfully launched the process!")
+            print("[*] PID: %d" % process_information.dwProcessId)
+
         else:
-            print("[*] Error: 0x%08x." % kernel32.GetLastError()
+            print("[*] Error: 0x%08x." % kernel32.GetLastError())
 

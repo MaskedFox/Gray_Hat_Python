@@ -1,13 +1,17 @@
-//@Author: Masked Fox
-//@Project: Gray Hat Python - Windows Debugger
-//@DATE: 06-05-2019
-//@Summary: This is a test for the windows debugger in order to test harness to 
-// Make sure everything works as polanned.
+"""
+//@File Name: my_test.py
+//@Summary: Example Windows Debugger from Gray Hat Python
+//@Author MaskedFox
+//@Date: June 04, 2019
+//@Email: iammaskedfx@gmail.com
+//@Credits: Gray Hat Python
+//@Status: On Going
+"""
 
 import my_debugger
 
 debugger = my_debugger.debugger()
-debvugger.load("C:\\WINDOWS\\system32\\calc.exe")
+debugger.load("C:\\WINDOWS\\system32\\calc.exe")
 
 
 
