@@ -18,7 +18,7 @@ LPTSTR = POINTER(c_char)
 HANDLE = c_void_p
 
 #Constants
-DEBUG_PROCESS = 0x00000010
+DEBUG_PROCESS = 0x00000001
 CREATE_NEW_CONSOLE = 0x00000010
 
 #Structures for CreateProcessA() function
