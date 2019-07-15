@@ -8,9 +8,7 @@
 @Status:
 
 """
-from debugger_defines import *
-from my_debugger import *
-from ctypes import *
+import my_debugger
 
 path = "C:\\WINDOWS\\system32\\calc.exe"
 debugger = my_debugger.Debugger()

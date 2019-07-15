@@ -9,10 +9,9 @@
 
 """
 
-import ctypes *
+from ctypes import *
 
 # Windows defines in Ctypes
-
 DWORD = c_ulong 
 LPSTR = c_char
 WORD = c_uint
@@ -20,15 +19,12 @@ LPBYTE = c_ubyte
 HANDLE = c_void_p
 
 # Defining Flags for Process Creation Flags
-
 CREATE_NEW_CONSOLE = 0X00000010
 DEBUG_PROCESS = 0X00000001
 
 # Defining STARTUPINFO
-
-Class Startupinfo(Structure):
-    __fields__ = 
-        [
+class Startupinfo(Structure):
+    _fields_ = [
         ("cb", DWORD),
         ("lpRsereved", LPSTR),
         ("lpDesktop", LPSTR),
@@ -40,7 +36,7 @@ Class Startupinfo(Structure):
         ("dwXCountChars", DWORD),
         ("dwYCountChars", DWORD),
         ("dwFillAttribute", DWORD),
-        ("dwFlags" DWORD),
+        ("dwFlags", DWORD),
         ("wShowWindow", WORD),
         ("cbReserved2", WORD),
         ("lpReserved2", LPBYTE),
@@ -48,10 +44,9 @@ Class Startupinfo(Structure):
         ("hStdOutput", HANDLE),
         ("hStdError", HANDLE),
         ]
-
-Class Process_information(Structure):
-    __Fields__=
-        [
+#Defining Process_information
+class Process_information(Structure):
+    _fields_= [
         ("hProcess", HANDLE),
         ("hThread", HANDLE),
         ("dwProcessId", DWORD),
