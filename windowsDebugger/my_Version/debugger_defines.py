@@ -1,13 +1,15 @@
 #! /usr/bin/python
 
 """
-@Name of Project:
-@Author
-@Date:
-@Summary
-@Status:
-
+//@File Name: debugger_defines.py
+//@Summary: Example Windows Debugger based on Gray Hat Python
+//@Author MaskedFox
+//@Date: July, 2019
+//@Email: iammaskedfx@gmail.com
+//@Credits: Gray Hat Python
+//@Status: On Going
 """
+
 
 from ctypes import *
 
@@ -52,6 +54,31 @@ class Process_information(Structure):
         ("dwProcessId", DWORD),
         ("dwThreadId", DWORD),
         ]
+#Defining OpenProcess
+class Open_process(Structure):
+	_fields_=[
+		("dwDesiredAccess", DWORD),
+		("bInheritHandle", BOOL),
+		("dwProcessId", DWORD),
+		]
+#Defining DebugActiveProcess
+class Debug_active_process(Structure):
+	_fields_= [
+		("dwProcessId", DWORD),
+		]
+#Defining WaitForDebugEvent
+class Wait_for_debug_event(Structure):
+	_fields_= [
+		("lpDebugEvent", LPDEBUG_EVENT),
+		("dwMilliseconds", DWORD),
+		]
+#Defining ContinueDebugEvent
+class Continue_debug_event(Structure):
+	_fields_= [
+		("dwProcessId", DWORD),
+		("dwThreadId", DWORD),
+		("dwContinuesStatus", DWORD),
+		]
 
 
 
