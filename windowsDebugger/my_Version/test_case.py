@@ -1,13 +1,15 @@
 #! /usr/bin/python
 
 """
-@Name of Project:
-@Author
-@Date:
-@Summary
-@Status:
-
+//@File Name: test_cases.py
+//@Summary: Example Windows Debugger based on Gray Hat Python
+//@Author MaskedFox
+//@Date: July, 2019
+//@Email: iammaskedfx@gmail.com
+//@Credits: Gray Hat Python
+//@Status: On Going
 """
+
 import my_debugger
 
 path = "C:\\WINDOWS\\system32\\calc.exe"

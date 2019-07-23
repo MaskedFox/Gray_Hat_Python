@@ -1,12 +1,13 @@
 #! /usr/bin/python
 
 """
-@Name of Project:
-@Author
-@Date:
-@Summary
-@Status:
-
+//@File Name: my_debugger.py
+//@Summary: Example Windows Debugger based on Gray Hat Python
+//@Author MaskedFox
+//@Date: July, 2019
+//@Email: iammaskedfx@gmail.com
+//@Credits: Gray Hat Python
+//@Status: On Going
 """
 
 from ctypes import *
