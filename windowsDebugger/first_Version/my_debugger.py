@@ -60,7 +60,7 @@ class debugger():
             print("[*] Error: 0x%08x." % kernel32.GetLastError())
     
     def open_process(self, pid):
-	h_process = kernel32.OpenProcess(PROCESSS_ALL, pid, False)
+	h_process = kernel32.OpenProcess(PROCESS_ALL_ACCESS, pid, False)
 	return h_process
   
     def attach(self, pid):
@@ -68,7 +68,7 @@ class debugger():
 	#We attemp to attach to the process
 	#if this fails we exit the call
 	if kernel32.DebugActiveProcess(pid):
-s		self.debugger_active = True
+		self.debugger_active = True
 		self.pid = int(pid)
 		self.run()
 	else:
@@ -77,13 +77,14 @@ s		self.debugger_active = True
     def run(self):
 	#Now we have to poll the debuggee for
 	#debugging events
-	While self.get_debug_event()
+        while self.debugger_active == True:
+            self.get_debug_event()
     
     def get_debug_event(self):
 	debug_event = DEBUG_EVENT()
 	continue_status = DBG_CONTINUE
 	
-	if kenel32.WaitForDebugEvent(byref(debug_event), INFINITE):
+	if kernel32.WaitForDebugEvent(byref(debug_event), INFINITE):
 		#We arent going to build any event handlers
 		# just yet. Lets just resume the process for now.
 		raw_input("press a key to conitnue...")
@@ -91,14 +92,11 @@ s		self.debugger_active = True
 		kernel32.ContinueDebugEvent(\
 			debug_event.dwProcessId, \
 			debug_event.dwThreadId, \
-			debug_event.dwThreadId, \
-			contienue_status )
+			continue_status )
  
-    def detach(self):
-	if kernel32	debug_event = DEBUG_EVENT()
-	continue_status = DBG_CONTINUE
+  
 	
-	if kenel32.WaitForDebugEvent(byref(debug_event), INFINITE):
+	if kernel32.WaitForDebugEvent(byref(debug_event), INFINITE):
 		#We arent going to build any event handlers
 		# just yet. Lets just resume the process for now.
 		raw_input("press a key to conitnue...")
@@ -106,12 +104,11 @@ s		self.debugger_active = True
 		kernel32.ContinueDebugEvent(\
 			debug_event.dwProcessId, \
 			debug_event.dwThreadId, \
-			debug_event.dwThreadId, \
-			contienue_status )
+			continue_status )
  
     def detach(self):
 	if kernel32.DebugActiveProcessStop(self.pid):
 		print("[*] Finished debugging. Exiting...")
 	else:
-		print("There wa an error"
+		print("There wa an error")
 		return False	

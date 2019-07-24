@@ -19,6 +19,7 @@ LPSTR = c_char
 WORD = c_uint
 LPBYTE = c_ubyte
 HANDLE = c_void_p
+BOOL = c_bool
 
 # Defining Flags for Process Creation Flags
 CREATE_NEW_CONSOLE = 0X00000010
