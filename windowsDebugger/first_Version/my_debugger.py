@@ -96,19 +96,52 @@ class debugger():
  
   
 	
-	if kernel32.WaitForDebugEvent(byref(debug_event), INFINITE):
-		#We arent going to build any event handlers
-		# just yet. Lets just resume the process for now.
-		raw_input("press a key to conitnue...")
-		self.debugger_active=False
-		kernel32.ContinueDebugEvent(\
-			debug_event.dwProcessId, \
-			debug_event.dwThreadId, \
-			continue_status )
  
     def detach(self):
 	if kernel32.DebugActiveProcessStop(self.pid):
 		print("[*] Finished debugging. Exiting...")
 	else:
 		print("There wa an error")
-		return False	
+		return False
+
+   def open_thread(self,thread_id):
+	h_thread = kernel32.OpenThread(THREAD_ALL_ACCESS, None, thread_id)
+	
+	if h_thread is not None:
+		return h_thread
+	else:
+		print("[*] Could nto obtain a valid thread handle.")
+		reuturn False
+
+   def enumerate_threads(self):
+	thread_entry = THREADENTRY32()
+	thread_list = []
+	  snapshot = kernel32.CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, self.pid)
+	
+
+	if snapshot is not None:
+		#Yout have to set the size of the struct
+		#or the call will fail
+		thread_entry.dwSize = sizeof(thread_entry)
+			success = kernel32.Thread32First(snapshot, byref(thread_entry))
+		
+		while success:
+			if thread_entry.th32OwnerPRocessID == self.pid:
+		 		Thread_list.append(thread_entry.th32ThreadID)
+				success - kernel32.Thread32Next(snapshot, byred(thread_entry))
+				kernel32.CloseHandle(snapshot)
+				return thread_list
+			else:
+				return False
+    def get_thread_context(self, thread_id):
+	context = CONTEXT()
+	context.ContextFlags = CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS
+	
+	# Obtain a handle to the thread
+	h_thread = self.open_thread(thread_id)
+	if kernel32.GetThreadCOntext(h_thread, byref(context)):
+		kernel32.CloseHandle(h_thread)
+		return context
+	else: 
+		return False
+

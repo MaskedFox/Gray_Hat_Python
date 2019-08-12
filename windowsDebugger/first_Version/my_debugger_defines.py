@@ -295,4 +295,38 @@ class Continue_debug_event(Structure):
 		("dwContinuesStatus", DWORD),
 		]
 
-    
+#Defining Openthread
+class Open_thread(structure):
+	_fields_= [
+		("dwDesiredAccess", DWORD),
+		("bInheriHandle", BOOL),
+		("dwThreadId", DWORD),
+		]
+
+#Defining CreateToolhelp32Snapshot
+class Create_tool_Help_32snapshot(structure):
+	_fields_= [
+		("dwFlags", DWORD),
+		("th32ProcessID", DWORD),
+		]
+
+# Defining Thread32First
+class Thread32_first(structure):
+	_fields_= [
+		("hSnapshot", HANDLE),
+		("lpte", THREADENTRY32),
+		]
+
+#Defining GetThreadContext
+class GetThreadContext(structure):
+	_fields_= [
+		("hThread", HANDLE),
+		("lpContext", LPCONTEXT),
+		]
+
+# Defining SetThreadContext
+class SetThreadContext(structure):
+	_fields_= [
+		("hThread", HANDLE),
+		("lpContext", LPCONTEXT),
+		] 
