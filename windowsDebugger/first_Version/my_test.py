@@ -13,12 +13,11 @@ import my_debugger
 debugger = my_debugger.debugger()
 pid = raw_input("Enter the PID of the process to attach to : ")
 debugger.attach(int(pid))
-
-list = debbuger.enumerate_threads()
+list = debugger.enumerate_threads()
 
 # For each thread in the list we want to grab the value of each of the registers
 for thread in list:
-	thread_context = debbuger.get_thread_context(thread)
+        thread_context = debugger.get_thread_context(thread)
 	
 	# Now let's output the contents of some of the registers
 	print("[*] Dumping registers for thread ID: 0x%08x" % thread)
