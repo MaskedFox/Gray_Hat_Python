@@ -26,6 +26,7 @@ class Debugger:
         self.context = None
         self.exception = None
         self.exception_address = None
+        self.breakpoints = {}
 
     def load(self, path_to_exe):
         # dwCreation flag determines how to create the process
@@ -113,7 +114,7 @@ class Debugger:
                     print("Guard Page Access Detected")
                 elif exception == EXCEPTION_SINGLE_STEP:
                     print("Single Stepping.")
-            
+
             kernel32.ContinueDebugEvent(
                 debug_event.dwProcessId,
                 debug_event.dwThreadId,
@@ -128,7 +129,7 @@ class Debugger:
         if kernel32.DebugActiveProcessStop(self.pid):
             print("[*] Finished debugging. Exiting...")
         else:
-            print("There wa an error")
+            print("There was an error")
             return False
 
     @staticmethod
@@ -173,3 +174,50 @@ class Debugger:
             return context
         else:
             return False
+
+    def read_process_memory(self,address,length):
+        data = ""
+        read_buf = create_string_buffer(length)
+        count = c_ulong(0)
+
+        if not kernel32.read_process_memory(self.h_process, address,
+                                            read_buf,
+                                            length,
+                                            byref(count)):
+            return False
+        else:
+            data += read_buf.raw
+            return data
+
+    def write_process_memory(self,address,data):
+        count = c_ulong(0)
+        length = len(data)
+        c_data = c_char_p(data[count.value:])
+
+        if not kernel32.write_process_memory(self.h_process,
+                                                addressof,
+                                                c_data,
+                                                length,
+                                                byref(count)):
+            return False
+        else:
+            return True
+
+    def bp_set(self, address):
+        if not address in self.breakpoints:
+            try:
+                # store the original byte
+                original_byte = self.read_process_memory(address, 1)
+                #write the INT3 opcode
+                self.write_process_memory(address, "\xCC")
+                # register the breakpoint in our internal list
+                self.breakpoints[address] = (original_byte)
+            except:
+                return False
+        return True
+
+    def func_resolve(self,dll,function):
+        handle = kernel32.GetModuleHandleA(dll)
+        address = kernel32.GetProcAddress(handle,function)
+        kernel32.CloseHandle(handle)
+        return address
