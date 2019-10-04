@@ -10,9 +10,8 @@
 
 from ctypes import *
 from my_debugger_defines import *
-from my_debugger_defines import PROCESS_ALL_ACCESS, THREAD_ALL_ACCESS, \
-    PROCESS_INFORMATION, STARTUPINFO, DEBUG_PROCESS, DEBUG_EVENT, DBG_CONTINUE, INFINITE, THREADENTRY32, \
-    TH32CS_SNAPTHREAD, CONTEXT, CONTEXT_FULL, CONTEXT_DEBUG_REGISTERS
+import sys
+import time
 
 kernel32 = windll.kernel32
 
@@ -27,6 +26,7 @@ class Debugger:
         self.exception = None
         self.exception_address = None
         self.breakpoints = {}
+        self.first_breakpoint = True
 
     def load(self, path_to_exe):
         # dwCreation flag determines how to create the process
@@ -120,11 +120,6 @@ class Debugger:
                 debug_event.dwThreadId,
                 continue_status)
 
-    def exception_handler_breakpoint(self):
-        print("[*] Inside the breakpoint handler.")
-        print("Exception Address: 0x%08x" % self.exception_address)
-        return DBG_CONTINUE
-
     def detach(self):
         if kernel32.DebugActiveProcessStop(self.pid):
             print("[*] Finished debugging. Exiting...")
@@ -166,55 +161,74 @@ class Debugger:
         context = CONTEXT()
         context.ContextFlags = CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS
         if not h_thread:
-            self.open_thread(thread_id)
+            self.h_thread = self.open_thread(thread_id)
         # Obtain a handle to the thread
-        h_thread = self.open_thread(thread_id)
+        #h_thread = self.open_thread(thread_id)
         if kernel32.GetThreadContext(h_thread, byref(context)):
-            kernel32.CloseHandle(h_thread)
+            #kernel32.CloseHandle(h_thread)
             return context
         else:
             return False
 
     def read_process_memory(self,address,length):
-        data = ""
+        data = b""
         read_buf = create_string_buffer(length)
         count = c_ulong(0)
 
-        if not kernel32.read_process_memory(self.h_process, address,
-                                            read_buf,
-                                            length,
-                                            byref(count)):
-            return False
-        else:
-            data += read_buf.raw
-            return data
+        kernel32.ReadProcessMemory(self.h_process, address, read_buf, 5, byref(count))
+        data += read_buf.raw
+        return data
 
     def write_process_memory(self,address,data):
         count = c_ulong(0)
         length = len(data)
         c_data = c_char_p(data[count.value:])
 
-        if not kernel32.write_process_memory(self.h_process,
-                                                addressof,
-                                                c_data,
-                                                length,
-                                                byref(count)):
+        if not kernel32.WriteProcessMemory(self.h_process, address, c_data, length, byref(count)):
             return False
         else:
             return True
 
-    def bp_set(self, address):
-        if not address in self.breakpoints:
-            try:
-                # store the original byte
-                original_byte = self.read_process_memory(address, 1)
-                #write the INT3 opcode
-                self.write_process_memory(address, "\xCC")
-                # register the breakpoint in our internal list
-                self.breakpoints[address] = (original_byte)
-            except:
+    def bp_set(self,address):
+        print("[*] Setting breakpoint at: 0x%08x" % address)
+        if address not in self.breakpoints:
+            # store the original byte
+            old_protect = c_ulong(0)
+            kernel32.VirtualProtectEx(self.h_process, address, 1, PAGE_EXECUTE_READWRITE, byref(old_protect))
+            original_byte = self.read_process_memory(address, 1)
+            if original_byte != False:
+                # write the INT3 opcode
+                if self.write_process_memory(address, b"\xCC"):
+                    # register the breakpoint in our internal list
+                    self.breakpoints[address] = (original_byte)
+                    return True
+            else:
                 return False
-        return True
+
+    def exception_handler_breakpoint(self):
+        print ("[*] Exception address:{:#x}".format(self.exception_address))
+        # check if the breakpoint is one that we set
+        if self.exception_address not in self.breakpoints:
+                # if it is the first Windows driven breakpoint
+                # then let's just continue on
+                if self.first_breakpoint == True:
+                   self.first_breakpoint = False
+                   print ("[*] Hit the first breakpoint.")
+                   return DBG_CONTINUE
+        else:
+            print ("[*] Hit user defined breakpoint.")
+            # this is where we handle the breakpoints we set
+            # first put the original byte back
+            self.write_process_memory(self.exception_address, self.breakpoints[self.exception_address])
+
+            # obtain a fresh context record, reset EIP back to the
+            # original byte and then set the thread's context record
+            # with the new EIP value
+            self.context = self.get_thread_context(h_thread=self.h_thread)
+            self.context.Eip -= 1
+            kernel32.SetThreadContext(self.h_thread,byref(self.context))
+            continue_status = DBG_CONTINUE
+        return continue_status
 
     def func_resolve(self,dll,function):
         handle = kernel32.GetModuleHandleA(dll)
