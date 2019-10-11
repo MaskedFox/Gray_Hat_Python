@@ -27,6 +27,7 @@ class Debugger:
         self.exception_address = None
         self.breakpoints = {}
         self.first_breakpoint = True
+        self.hardware_breakpoints = {}
 
     def load(self, path_to_exe):
         # dwCreation flag determines how to create the process
@@ -102,18 +103,19 @@ class Debugger:
             # examine it further.
             if debug_event.dwDebugEventCode == EXCEPTION_DEBUG_EVENT:
                 # Obtain the exception code
-                exception = debug_event.u.Exception.ExceptionRecord.ExceptionCode
+                self.exception = debug_event.u.Exception.ExceptionRecord.ExceptionCode
                 self.exception_address = debug_event.u.Exception.ExceptionRecord.ExceptionAddress
 
-                if exception == EXCEPTION_ACCESS_VIOLATION:
+                if self.exception == EXCEPTION_ACCESS_VIOLATION:
                     print("Access Violation Detected.")
                     # if a breakpoint is detected, we call an internal handler
-                elif exception == EXCEPTION_BREAKPOINT:
+                elif self.exception == EXCEPTION_BREAKPOINT:
                     continue_status = self.exception_handler_breakpoint()
-                elif exception == EXCEPTION_GUARD_PAGE:
+                elif self.exception == EXCEPTION_GUARD_PAGE:
                     print("Guard Page Access Detected")
-                elif exception == EXCEPTION_SINGLE_STEP:
-                    print("Single Stepping.")
+                elif self.exception == EXCEPTION_SINGLE_STEP:
+                    #print("Single Stepping.")
+                    self.exception_handler_single_step()
 
             kernel32.ContinueDebugEvent(
                 debug_event.dwProcessId,
@@ -127,14 +129,14 @@ class Debugger:
             print("There was an error")
             return False
 
-    @staticmethod
-    def open_thread(thread_id):
+
+    def open_thread(self,thread_id):
         h_thread = kernel32.OpenThread(THREAD_ALL_ACCESS, None, thread_id)
 
         if h_thread is not None:
             return h_thread
         else:
-            print("[*] Could nto obtain a valid thread handle.")
+            print("[*] Could not obtain a valid thread handle.")
             return False
 
     def enumerate_threads(self):
@@ -157,14 +159,14 @@ class Debugger:
         else:
             return False
 
-    def get_thread_context(self, thread_id=None, h_thread=None):
+    def get_thread_context(self, thread_id = None, h_thread = None):
         context = CONTEXT()
         context.ContextFlags = CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS
-        if not h_thread:
+        if h_thread is None:
             self.h_thread = self.open_thread(thread_id)
         # Obtain a handle to the thread
         #h_thread = self.open_thread(thread_id)
-        if kernel32.GetThreadContext(h_thread, byref(context)):
+        if kernel32.GetThreadContext(self.h_thread, byref(context)):
             #kernel32.CloseHandle(h_thread)
             return context
         else:
@@ -235,3 +237,115 @@ class Debugger:
         address = kernel32.GetProcAddress(handle,function)
         kernel32.CloseHandle(handle)
         return address
+
+    def bp_set_hw(self, address, length, condition):
+        # Check for a valid length value
+        if length not in (1, 2, 4):
+            return False
+        else:
+            length -= 1
+
+        # Check for a valid condition
+        if condition not in (HW_ACCESS, HW_EXECUTE, HW_WRITE):
+            return False
+
+        # Check for available slots
+        if 0 not in self.hardware_breakpoints:
+            available = 0
+        elif 1 not in self.hardware_breakpoints:
+            available = 1
+        elif 2 not in self.hardware_breakpoints:
+            available = 2
+        elif 3 not in self.hardware_breakpoints:
+            available = 3
+        else:
+            return False
+
+        # We want to set the debug register in every thread
+        for thread_id in self.enumerate_threads():
+            context = self.get_thread_context(thread_id = thread_id)
+
+
+            # Enable the appropriate flag in the DR7
+            # Register to set the breakpoint
+            context.Dr7 |= 1 << (available * 2)
+            # Save the address of the breakpoint in the
+            # free register that we found
+            if available == 0:
+                context.Dr0 = address
+            elif available == 1:
+                context.Dr1 = address
+            elif available == 2:
+                context.Dr2 = address
+            elif available == 3:
+                context.Dr3 == address
+
+            # Set the breakpoint condition
+            context.Dr7 |= condition << ((available * 4)+16)
+
+            # Set the length
+            context.Dr7 |= length << ((available)+ 18)
+
+            # Set thread context with the break set
+            h_thread = self.open_thread(thread_id)
+            kernel32.SetThreadContext(h_thread, byref(context))
+
+        # update the internal hardware breakpoint array at the used
+        # slow index.
+        self.hardware_breakpoints[available] = (address, length,condition)
+
+        return True
+
+    def exception_handler_single_step(self):
+        # Comment from PyDBG:
+        # determine if this single step event occurred in reaction to a
+        # hardware breakpoint and grab the hit breakpoint.
+        # the BS flag in Dr6. but it appears that Windows
+        # isn't properly propagating that flag down to us.
+        if self.context.Dr6 & 0x1 and 0 in self.hardware_breakpoints:
+            slot = 0
+        elif self.context.Dr6 & 0x2 and 1 in self.hardware_breakpoints:
+            slot = 1
+        elif self.context.Dr6 & 0x4 and 2 in self.hardware_breakpoints:
+            slot = 2
+        elif self.context.Dr6 & 0x8 and 3 in  self.hardware_breakpoints:
+            slot = 3
+        else:
+            # This wasn't an INT1 generated by a hw breakpoint
+            continue_status = DBG_EXCEPTION_NOT_HANDLED
+
+        # Now let's remove the breakpoint from the list
+        if self.bp_del_hw(slot):
+            continue_status = DBG_CONTINUE
+        print("[*] Hardware breakpoint removed.")
+        return continue_status
+
+    def bp_del_hw(self,slot):
+        # Disable the breakpoint for all active threads
+        for thread_id in self.enumerate_threads():
+            context = self.get_thread_context(thread_id=thread_id)
+            # Reset the flags to remove the breakpoint
+            context.Dr7 &= ~(1 << (slot * 2))
+            # Zero out the address
+            if slot == 0:
+                context.Dr0 = 0x00000000
+            elif slot == 1:
+                context.Dr1 = 0x00000000
+            elif slot == 2:
+                context.Dr2 = 0x00000000
+            elif slot == 3:
+                context.Dr3 = 0x00000000
+            # Remove the condition flag
+            context.Dr7 &= ~(3 << ((slot * 4)+16))
+            # Remove the length flag
+            context.Dr7 &= ~(3 << ((slot * 4)+ 18))
+            # Reset the thread's context with the breakpoint removed
+            h_thread = self.open_thread(thread_id)
+            kernel32.SetThreadContext(h_thread,byref(context))
+
+        # Remove the breakpoint from the internal list.
+        del self.hardware_breakpoints[slot]
+        return True
+
+
+
